@@ -69,6 +69,77 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+  void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
+
+    // If we have a RADAR or LiDAR measurement and the corresponding "use" flags are true:
+    if((use_radar_ && meas_package.sensor_type_ == MeasurementPackage::RADAR) ||
+      (use_laser_ && meas_package.sensor_type_ == MeasurementPackage::LASER)){
+    
+      //--------------------------------------------------------------------------
+      // If the UKF is not initialized, call the initialization function and skip 
+      // update and predict steps
+      //--------------------------------------------------------------------------
+      if(!is_initialized_){
+        x_ << 1,1,1,1,0.1;
+    
+        // Initialize covariance matrix (P_) with default values
+        P_ <<  0.15,     0,  0,  0,  0,
+                  0,  0.15,  0,  0,  0,
+                  0,     0,  1,  0,  0,
+                  0,     0,  0,  1,  0,
+                  0,     0,  0,  0,  1;
+        
+        // Initialize time with current timestamp
+        time_us_ = meas_package.timestamp_;
+        
+        if(use_radar_ && meas_package.sensor_type_ == MeasurementPackage::RADAR){
+        
+        // Read in initial Radar measurements
+        double rho = meas_package.raw_measurements_[0];
+        double phi = meas_package.raw_measurements_[1];
+        
+        // Convert rho and phito px, and py.
+        double px = rho * cos(phi);
+        double py = rho * sin(phi);
+        
+        //Set Initial State
+        x_(0) = px;
+        x_(1) = py;
+        }
+        
+        if(use_laser_ && meas_package.sensor_type_ == MeasurementPackage::LASER){
+        
+          x_(0) = meas_package.raw_measurements_[0];
+          x_(1) = meas_package.raw_measurements_[1];
+        }
+        
+        // Return from function after initialization
+        is_initialized_ = true;
+        return;
+      }
+    
+      //----------------------------------------------------------------------
+      // If the UKF if already initialized, call the Predict and Update steps
+      //----------------------------------------------------------------------
+    
+      // Calculate time elapsed since last measurement in seconds
+      double delta_t = (meas_package.timestamp_ - time_us_) / 1000000.0;
+    
+      // Update the measurement time
+      time_us_ = meas_package.timestamp_;
+    
+      // Call UKF Prediction Step
+      Prediction(delta_t);
+    
+      // Call UKF Update Step for appropriate sensor
+      if(meas_package.sensor_type_ == MeasurementPackage::RADAR){
+        UpdateRadar(meas_package);
+      }
+      else if(meas_package.sensor_type_ == MeasurementPackage::LASER){
+        UpdateLidar(meas_package);
+      }
+    }
+  }  
 }
 
 /**
