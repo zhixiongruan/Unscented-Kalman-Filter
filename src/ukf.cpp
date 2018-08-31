@@ -92,7 +92,7 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   
     //initialization
     if(!is_initialized_){
-      x_.fill(0,0);
+      x_.fill(0.0);
   
       // Initialize covariance matrix (P_) with default values
       P_ << 0.5, 0, 0, 0, 0,
